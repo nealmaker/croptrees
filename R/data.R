@@ -7,7 +7,7 @@ requireNamespace("dplyr")
 # define tree variables ########################################################
 # species of interest chosen from forestmaker species
 species <- levels(forestmaker::simtrees_sample$spp)[
-  c(5, 10, 11, 12, 18, 19, 22, 23, 27, 28)]
+  c(5, 10, 11, 12, 18, 19, 22, 23, 26, 27, 28)]
 
 dbhs <- seq(4, 22, by = 3)
 
@@ -28,17 +28,26 @@ grades <- paste0(grades, "5555555")
 
 # define sites #################################################################
 sites <- list(
-  # rich northern hardwood site on Salmon-Adamant complex soils along the
+  # hardwood-white pine site on Becket sandy loam soils at Paul Smith's College
+  # Forest.
+  ganitictill = list(lat = 44.463, lon = -74.211, site_class = 5, elev = 1300),
+
+  # rich northern hardwood site on deep, loamy Salmon-Adamant complex soils along the
   # Winooski River in Moretown VT, deposited in Glacial Lake Winooski.
-  richhw = list(lat = 44.316, lon = -72.7423, site_class = 4, elev = 700),
+  richnhw = list(lat = 44.316, lon = -72.7423, site_class = 4, elev = 700),
+
   # beech-red maple hardwood site on convex mountain slope in Bartlett NH,
-  # Monadnock very stony granitic till soils. look up how that forest is
-  # classified
-  tillmixed = list(lat = 44.094, lon = -71.268, site_class = 6, elev = 1500),
-  # sandy well-drained piney site at Paul Smith's College Forest
-  sandyoutwash = list(lat = 2, lon = -72, site_class = 4, elev = 1300),
-  # lowland spruce-fir forest in Maine somewhere
-  lowspfr = list(lat = 2, lon = -72, site_class = 4, elev = 1300)
+  # Monadnock very stony granitic till soils.
+  # LEFT OUT BECAUSE IT'S VERY SIMILAR TO GRANITIC TILL
+  # mountaintill = list(lat = 44.094, lon = -71.268, site_class = 5, elev = 1500),
+
+  # lowland spruce-fir site on poorly-drained Brayton lodgment till soil in
+  # Dallas Maine.
+  lowlandspfr = list(lat = 45.009, lon = -70.606, site_class = 6, elev = 1700),
+
+  # mesic clayplain site on Vergennes clay at the Williams Woods Natural Area,
+  # Charlotte, VT
+  clayplain = list(lat = 44.275, lon = -73.243, site_class = 5, elev = 120)
 )
 
 
@@ -65,21 +74,38 @@ params <- forestmaker::params_default
 
 # mill prices based on Jan 2025 Log Street Journal reports for NY, VT, NH, ME,
 # Canada
-params$prices$mill_grade2[params$prices$spp == "black cherry"] <- 325
-params$prices$mill_grade2[params$prices$spp == "fir"] <- 370
-params$prices$mill_grade2[params$prices$spp == "hard maple"] <- 575
-params$prices$mill_grade2[params$prices$spp == "hemlock"] <- 270
-params$prices$mill_grade2[params$prices$spp == "paper birch"] <- 375
-params$prices$mill_grade2[params$prices$spp == "red oak"] <- 525
-params$prices$mill_grade2[params$prices$spp == "soft maple"] <- 400
-params$prices$mill_grade2[params$prices$spp == "spruce"] <- 370
-params$prices$mill_grade2[params$prices$spp == "white pine"] <- 300
-params$prices$mill_grade2[params$prices$spp == "yellow birch"] <- 400
+# params$prices$mill_grade2[params$prices$spp == "black cherry"] <- 325
+# params$prices$mill_grade2[params$prices$spp == "fir"] <- 370
+# params$prices$mill_grade2[params$prices$spp == "hard maple"] <- 575
+# params$prices$mill_grade2[params$prices$spp == "hemlock"] <- 270
+# params$prices$mill_grade2[params$prices$spp == "paper birch"] <- 375
+# params$prices$mill_grade2[params$prices$spp == "red oak"] <- 525
+# params$prices$mill_grade2[params$prices$spp == "red maple"] <- 400
+# params$prices$mill_grade2[params$prices$spp == "red spruce"] <- 370
+# params$prices$mill_grade2[params$prices$spp == "white oak"] <- 480
+# params$prices$mill_grade2[params$prices$spp == "white pine"] <- 300
+# params$prices$mill_grade2[params$prices$spp == "yellow birch"] <- 400
 
-# keep default pulp/firewood prices of 160/mbf hw & 125/mbf sw
+# Instead of using current species-specific prices, decided to use current
+# averages for broad species groups (medium value hardwoods, high value
+# hardwoods, pine/hemlock, and softwoods), since price relationships between
+# those groups have been shown to roughly hold over time, but prices of specific
+# species within each group vary relative to one-another.
+params$prices$mill_grade2[params$prices$spp_grp == "mvh"] <- 406
+params$prices$mill_grade2[params$prices$spp_grp == "hvh"] <- 456
+params$prices$mill_grade2[params$prices$spp_grp == "pine_hem"] <- 285
+params$prices$mill_grade2[params$prices$spp_grp == "sw"] <- 370
 
-# stumpage equation uses trucking cost of $75/mbf (observed by PBF) and assumes
-# that stumpage/mbf equals .6 * (roadside price - $60)
+# pulp/firewood prices of 125/mbf for hardwoods & 45/mbf for softwoods, roadside
+# (~$62.50/cd & $18/ton, respectively) based on 2024 Pekin Branch Forestry
+# records.
+params$prices$pulp_roadside <- 125
+params$prices$pulp_roadside[forestmaker::softwood(params$prices$spp)] <- 45
+
+# stumpage equation uses trucking cost of $75/mbf (from 2024 Pekin Branch
+# Forestry records) and estimates that stumpage ($/mbf) = .6 * (roadside price -
+# $60). This is a reasonable estimate for a higher value operation, in the
+# experience of Maker and Foppert.
 params$truckcost <- 75
 params$stump <- forestmaker::stump_factory(.6, 60, method = "linear")
 
