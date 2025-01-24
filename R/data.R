@@ -3,11 +3,12 @@ requireNamespace("magrittr")
 requireNamespace("ranger")
 requireNamespace("Rborist")
 requireNamespace("dplyr")
+requireNamespace("tidyr")
 
 # define tree variables ########################################################
 # species of interest chosen from forestmaker species
-species <- levels(forestmaker::simtrees_sample$spp)[
-  c(5, 10, 11, 12, 18, 19, 22, 23, 26, 27, 28)]
+species <- unique(forestmaker::params_default$prices$spp)[
+  c(7, 13, 15, 16, 22, 24, 25, 27, 33, 34, 36)]
 
 dbhs <- seq(4, 22, by = 3)
 
@@ -53,13 +54,13 @@ sites <- list(
 
 
 # compile dataset ##############################################################
-dat <- expand.grid(spp = species, dbh = dbhs, cr = crs, grade = grades) |>
+dat <- expand.grid(spp = species, dbh = dbhs, cr = crs, logs = grades) |>
   # assume the tree in question is alone in the plot. 24.07 is scalar to convert
   # ba/plot to ba/acre
   dplyr::mutate(tpa = 24.07, ba_ac = (0.005454 * dbh ^ 2) * tpa, cumsurv = 1,
                 ba = ba_ac, bal = 0)
 
-data_by_site <- lapply(sites, function(x) {
+dat <- lapply(sites, function(x) {
   # add site attributes
   y <- dat |> dplyr::mutate(site_class = x$site_class, lat = x$lat, lon = x$lon,
                             elev = x$elev)
@@ -67,6 +68,8 @@ data_by_site <- lapply(sites, function(x) {
   y$height <- forestmaker::est_ht(y)
   return(y)
 })
+dat <- do.call(rbind, dat)
+dat$tree <- dat$plot <- dat$stand <- 1:nrow(dat)
 
 
 # set parameters to guide simulations ##########################################
@@ -115,6 +118,10 @@ max_dbh <- 30
 params$endyr <- 200
 
 
+# add values to data now that params are set ###################################
+dat$value <- forestmaker::stumpage(dat, params = params)
+# NEED TO FIX SPECIES IN FORESTMAKER'S PARAMS DEFAULT AND PRICE COEFFS
+
 # write simulator function #####################################################
 # will eventually return data frame of trees at each timestep and their
 # undiscounted values, now just returns df without values
@@ -127,13 +134,47 @@ get_values <- function(dat, params, max_dbh) {
     dat[index, ] <- dat_new <-
       forestmaker::grow(dat[index, ], params, models = "base")
     dat$ba <- dat$ba_ac
+    dat_new$ba <- dat_new$ba_ac
     dat_new$year <- year
+
+
+    dat_new <- dat_new |>
+      dplyr::mutate(
+        # ruin bolt grades in dat_new if bolts are branchy, based on ht and cr
+        crown_base = height * (100 - cr) / 100,
+        logs = dplyr::case_when(
+          crown_base < 9.5 ~ "5555555555",
+          crown_base < 18 ~ paste0(substr(logs, 1, 1), "555555555"),
+          crown_base < 26.5 ~ paste0(substr(logs, 1, 2), "55555555"),
+          TRUE ~ logs)
+      ) |>
+      dplyr::select(!crown_base)
+
+    # get undiscounted stumpage values, modified by cumulative probability of
+    # survival
+    dat_new$value = forestmaker::stumpage(dat_new, params = params) *
+      dat_new$cumsurv
+
+    # bind new timestep to simulation
     sim <- rbind(sim, dat_new)
+
     if (all(dat$dbh >= max_dbh)) break
     if (year > params$endyr) break
   }
   return(sim)
 }
 
-# TO DO: Get values into get_values; add function that ruins current grade if
-# crown (based on CR) extends into bolt; parallelize with some testing
+# test by varying just the crown ratio:
+test <- dat |>
+  dplyr::filter(spp == "red spruce", dbh == 13, logs == "1225555555",
+                lat == dat$lat[1])
+
+out <- get_values(test, params, max_dbh)
+
+requireNamespace("ggplot2")
+out |> ggplot(aes(year, value, colour = as.factor(tree))) + geom_line()
+out |> ggplot(aes(year, cumsurv)) + geom_point()
+
+## SURVIVAL FUNCTION IS KILLING EVERYTHING!!!!!!!!!!!!!!!!
+
+# TO DO: parallelize with some testing
