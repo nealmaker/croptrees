@@ -33,8 +33,8 @@ sites <- list(
   # Forest.
   ganitictill = list(lat = 44.463, lon = -74.211, site_class = 5, elev = 1300),
 
-  # rich northern hardwood site on deep, loamy Salmon-Adamant complex soils along the
-  # Winooski River in Moretown VT, deposited in Glacial Lake Winooski.
+  # rich northern hardwood site on deep, loamy Salmon-Adamant complex soils
+  # along the Winooski River in Moretown VT, deposited in Glacial Lake Winooski.
   richnhw = list(lat = 44.316, lon = -72.7423, site_class = 4, elev = 700),
 
   # beech-red maple hardwood site on convex mountain slope in Bartlett NH,
@@ -77,6 +77,7 @@ params <- forestmaker::params_default
 
 # mill prices based on Jan 2025 Log Street Journal reports for NY, VT, NH, ME,
 # Canada
+
 # params$prices$mill_grade2[params$prices$spp == "black cherry"] <- 325
 # params$prices$mill_grade2[params$prices$spp == "fir"] <- 370
 # params$prices$mill_grade2[params$prices$spp == "hard maple"] <- 575
@@ -120,11 +121,11 @@ params$endyr <- 200
 
 # add values to data now that params are set ###################################
 dat$value <- forestmaker::stumpage(dat, params = params)
-# NEED TO FIX SPECIES IN FORESTMAKER'S PARAMS DEFAULT AND PRICE COEFFS
+
 
 # write simulator function #####################################################
-# will eventually return data frame of trees at each timestep and their
-# undiscounted values, now just returns df without values
+
+# returns data frame of trees at each timestep and their undiscounted values
 get_values <- function(dat, params, max_dbh) {
   sim <- dat <- dat |> dplyr::mutate(year = 0)
   year <- 0
@@ -133,6 +134,9 @@ get_values <- function(dat, params, max_dbh) {
     index <- which(dat$dbh < max_dbh)
     dat[index, ] <- dat_new <-
       forestmaker::grow(dat[index, ], params, models = "base")
+    # CONSIDER CR FUNCTION THAT ASSUMES CROWN BASE IS FIXED AT TIME 0
+    # would be valid if crop trees remain free to grow throughout life
+    # maybe more accurate in this case than random forest model?
     dat$ba <- dat$ba_ac
     dat_new$ba <- dat_new$ba_ac
     dat_new$year <- year
@@ -141,6 +145,7 @@ get_values <- function(dat, params, max_dbh) {
     dat_new <- dat_new |>
       dplyr::mutate(
         # ruin bolt grades in dat_new if bolts are branchy, based on ht and cr
+        # IF THIS IS KEPT, IT SHOULD ONLY APPLY TO HARDWOODS!!!!!!!!!!!!!!!!
         crown_base = height * (100 - cr) / 100,
         logs = dplyr::case_when(
           crown_base < 9.5 ~ "5555555555",
@@ -155,7 +160,7 @@ get_values <- function(dat, params, max_dbh) {
     dat_new$value = forestmaker::stumpage(dat_new, params = params) *
       dat_new$cumsurv
 
-    # bind new timestep to simulation
+    # add data for new timestep to data for previous timesteps
     sim <- rbind(sim, dat_new)
 
     if (all(dat$dbh >= max_dbh)) break
@@ -164,16 +169,22 @@ get_values <- function(dat, params, max_dbh) {
   return(sim)
 }
 
+
+# run simulations to generate data #############################################
+
 # test by varying just the crown ratio:
-# test <- dat |>
-#   dplyr::filter(spp == "hard maple", dbh == 10, logs == "1225555555",
-#                 lat == dat$lat[1])
-#
-# out <- get_values(test, params, max_dbh)
-#
-# requireNamespace("ggplot2")
-# out |> ggplot(aes(year, value, colour = as.factor(tree))) + geom_line()
+test <- dat |>
+  dplyr::filter(spp == "hard maple", dbh == 10, logs == "1225555555",
+                lat == dat$lat[1])
 
-## SURVIVAL FUNCTION IS KILLING EVERYTHING!!!!!!!!!!!!!!!!
+out <- get_values(test, params, max_dbh)
 
-# TO DO: parallelize with some testing
+requireNamespace("ggplot2")
+out |> ggplot(aes(year, value, colour = as.factor(tree))) + geom_line()
+out |> ggplot(aes(year, cumsurv, colour = as.factor(tree))) + geom_line()
+
+## SURVIVAL FUNCTION IS KILLING EVERYTHING WITH BASE MODELS!!!!!!!!!!!!!!!!
+## things are pretty much as expected if skinny models are used instead of base models
+
+# TO DO: test survival function; retest main functionality; parallelize with
+# some testing
