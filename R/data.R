@@ -165,15 +165,14 @@ get_values <- function(dat, params, max_dbh) {
 }
 
 # test by varying just the crown ratio:
-test <- dat |>
-  dplyr::filter(spp == "red spruce", dbh == 13, logs == "1225555555",
-                lat == dat$lat[1])
-
-out <- get_values(test, params, max_dbh)
-
-requireNamespace("ggplot2")
-out |> ggplot(aes(year, value, colour = as.factor(tree))) + geom_line()
-out |> ggplot(aes(year, cumsurv)) + geom_point()
+# test <- dat |>
+#   dplyr::filter(spp == "hard maple", dbh == 10, logs == "1225555555",
+#                 lat == dat$lat[1])
+#
+# out <- get_values(test, params, max_dbh)
+#
+# requireNamespace("ggplot2")
+# out |> ggplot(aes(year, value, colour = as.factor(tree))) + geom_line()
 
 ## SURVIVAL FUNCTION IS KILLING EVERYTHING!!!!!!!!!!!!!!!!
 
