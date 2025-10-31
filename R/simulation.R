@@ -2,7 +2,7 @@ source("R/data.R")
 
 # test by varying just the crown ratio #########################################
 test <- dat |>
-  dplyr::filter(spp == dat$spp[2], dbh == 10, logs == "1225555555",
+  dplyr::filter(spp == dat$spp[3], dbh == 10, logs == "1225555555",
                 lat == dat$lat[1])
 
 out <- get_values(test, params, max_dbh, mods)

@@ -12,11 +12,11 @@ mods <- treemodeler::initialize_models("5.3", c("base", "base", "slim"),
                                        cr_mode = "derived")
 
 # define tree variables ########################################################
-# species of interest chosen from forestmaker species black cherry, fir, hard
+# species of interest chosen from forestmaker species: black cherry, fir, hard
 # maple, hemlock, paper birch, red maple, red oak, red spruce, white oak, white
 # pine, yellow birch
 species <- unique(forestgrower::params_default$prices$spp)[
-  c(11, 21, 24, 25, 52, 54, 56, 58, 68, 73, 75)]
+  c(11, 21, 23, 25, 52, 54, 55, 58, 68, 73, 75)]
 
 dbhs <- seq(4, 22, by = 3)
 
@@ -79,11 +79,20 @@ dat <- lapply(sites, function(x) {
 dat <- do.call(rbind, dat)
 dat$tree <- dat$plot <- dat$stand <- 1:nrow(dat)
 dat$spp <- as.character(dat$spp)
+dat$logs <- as.character(dat$logs)
 dat$live <- TRUE
+dat$sw <- treemodeler::softwood(dat$spp)
 
 
 # set parameters to guide simulations ##########################################
 params <- forestgrower::params_default
+# filter only applicable species in params and remove duplicates
+params$prices <- params$prices[params$prices$spp %in% species, ]
+for (i in unique(params$prices$spp)) {
+  idx <- params$prices$spp == i
+  p <- params$prices[idx, ][1, ]
+  params$prices <- rbind(params$prices[!idx, ], p)
+}
 
 # mill prices based on Jan 2025 Log Street Journal reports for NY, VT, NH, ME,
 # Canada
@@ -161,7 +170,9 @@ get_values <- function(dat, params, max_dbh, mods) {
     dat_new$year <- year
 
 
-    dat_new <- dat_new |>
+    # ruin grades if log is in crown, only for hardwoods
+    dat_new[!dat_new$sw, ] <-
+      dat_new[!dat_new$sw, ] |>
       dplyr::mutate(
         # ruin bolt grades in dat_new if bolts are branchy, based on ht and cr
         # IF THIS IS KEPT, IT SHOULD ONLY APPLY TO HARDWOODS!!!!!!!!!!!!!!!!
