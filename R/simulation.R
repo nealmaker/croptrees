@@ -18,3 +18,12 @@ rm(test, out)
 
 # simulations for the whole enchilada ##########################################
 out <- get_values(dat, params, max_dbh, mods)
+
+
+# simplify output to play with data ############################################
+out <- out |>
+  dplyr::mutate(site = dplyr::case_when(lat == 44.463 ~ "granitictill",
+                                        lat == 44.316 ~ "richnhw",
+                                        lat == 45.009 ~ "lowlandspfr",
+                                        TRUE ~ "clayplain")) |>
+  dplyr::select(tree, spp, dbh, cr, logs, site, value, year)
