@@ -1,14 +1,22 @@
-requireNamespace("forestmaker")
+requireNamespace("forestgrower")
+requireNamespace("treemodeler")
+requireNamespace("timbertally")
 requireNamespace("magrittr")
-requireNamespace("ranger")
-requireNamespace("Rborist")
 requireNamespace("dplyr")
 requireNamespace("tidyr")
 
+# load models ##################################################################
+options("treemodeler.registry_path" = "C:/Users/neal/projects/forestmaker-models")
+mods <- treemodeler::initialize_models("5.3", c("base", "base", "slim"),
+                                       c("growth", "height", "taper"),
+                                       cr_mode = "derived")
+
 # define tree variables ########################################################
-# species of interest chosen from forestmaker species
-species <- unique(forestmaker::params_default$prices$spp)[
-  c(7, 13, 15, 16, 22, 24, 25, 27, 33, 34, 36)]
+# species of interest chosen from forestmaker species black cherry, fir, hard
+# maple, hemlock, paper birch, red maple, red oak, red spruce, white oak, white
+# pine, yellow birch
+species <- unique(forestgrower::params_default$prices$spp)[
+  c(11, 21, 24, 25, 52, 54, 56, 58, 68, 73, 75)]
 
 dbhs <- seq(4, 22, by = 3)
 
@@ -65,15 +73,17 @@ dat <- lapply(sites, function(x) {
   y <- dat |> dplyr::mutate(site_class = x$site_class, lat = x$lat, lon = x$lon,
                             elev = x$elev)
   # estimate tree heights using a random forest model built into forestmaker
-  y$height <- forestmaker::est_ht(y)
+  y$height <- treemodeler::predict_ht(y, mods)
   return(y)
 })
 dat <- do.call(rbind, dat)
 dat$tree <- dat$plot <- dat$stand <- 1:nrow(dat)
+dat$spp <- as.character(dat$spp)
+dat$live <- TRUE
 
 
 # set parameters to guide simulations ##########################################
-params <- forestmaker::params_default
+params <- forestgrower::params_default
 
 # mill prices based on Jan 2025 Log Street Journal reports for NY, VT, NH, ME,
 # Canada
@@ -104,14 +114,14 @@ params$prices$mill_grade2[params$prices$spp_grp == "sw"] <- 370
 # (~$62.50/cd & $18/ton, respectively) based on 2024 Pekin Branch Forestry
 # records.
 params$prices$pulp_roadside <- 125
-params$prices$pulp_roadside[forestmaker::softwood(params$prices$spp)] <- 45
+params$prices$pulp_roadside[treemodeler::softwood(params$prices$spp, mods)] <- 45
 
 # stumpage equation uses trucking cost of $75/mbf (from 2024 Pekin Branch
 # Forestry records) and estimates that stumpage ($/mbf) = .6 * (roadside price -
 # $60). This is a reasonable estimate for a higher value operation, in the
 # experience of Maker and Foppert.
 params$truckcost <- 75
-params$stump <- forestmaker::stump_factory(.6, 60, method = "linear")
+params$stump <- timbertally::stump_factory(.6, 60, method = "linear")
 
 # dbh at which to stop growing any given tree
 max_dbh <- 30
@@ -119,21 +129,30 @@ max_dbh <- 30
 params$endyr <- 200
 
 
+# encode species to match models ###############################################
+dat <-
+  treemodeler::encode_simulation_inputs(dat, mods$region,
+                                        mods$canonical_feature_spec)
+params$prices <-
+  treemodeler::encode_simulation_inputs(params$prices, mods$region,
+                                        mods$canonical_feature_spec)
+
 # add values to data now that params are set ###################################
-dat$value <- forestmaker::stumpage(dat, params = params)
+dat$value <- timbertally::stumpage(dat, params$stump, params,
+                                   params$truckcost, mods)
 
 
 # write simulator function #####################################################
 
 # returns data frame of trees at each timestep and their undiscounted values
-get_values <- function(dat, params, max_dbh) {
+get_values <- function(dat, params, max_dbh, mods) {
   sim <- dat <- dat |> dplyr::mutate(year = 0)
   year <- 0
   repeat {
     year <- year + params$steplength
     index <- which(dat$dbh < max_dbh)
     dat[index, ] <- dat_new <-
-      forestmaker::grow(dat[index, ], params, models = "base")
+      forestgrower::grow(dat[index, ], params, mods)
     # CONSIDER CR FUNCTION THAT ASSUMES CROWN BASE IS FIXED AT TIME 0
     # would be valid if crop trees remain free to grow throughout life
     # maybe more accurate in this case than random forest model?
@@ -157,7 +176,7 @@ get_values <- function(dat, params, max_dbh) {
 
     # get undiscounted stumpage values, modified by cumulative probability of
     # survival
-    dat_new$value = forestmaker::stumpage(dat_new, params = params) *
+    dat_new$value = timbertally::stumpage(dat_new, params$stump, params, params$truckcost, mods) *
       dat_new$cumsurv
 
     # add data for new timestep to data for previous timesteps
@@ -168,23 +187,3 @@ get_values <- function(dat, params, max_dbh) {
   }
   return(sim)
 }
-
-
-# run simulations to generate data #############################################
-
-# test by varying just the crown ratio:
-test <- dat |>
-  dplyr::filter(spp == "hard maple", dbh == 10, logs == "1225555555",
-                lat == dat$lat[1])
-
-out <- get_values(test, params, max_dbh)
-
-requireNamespace("ggplot2")
-out |> ggplot(aes(year, value, colour = as.factor(tree))) + geom_line()
-out |> ggplot(aes(year, cumsurv, colour = as.factor(tree))) + geom_line()
-
-## SURVIVAL FUNCTION IS KILLING EVERYTHING WITH BASE MODELS!!!!!!!!!!!!!!!!
-## things are pretty much as expected if skinny models are used instead of base models
-
-# TO DO: test survival function; retest main functionality; parallelize with
-# some testing
