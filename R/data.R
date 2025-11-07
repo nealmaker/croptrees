@@ -18,6 +18,9 @@ mods <- treemodeler::initialize_models("5.3", c("base", "base", "slim"),
 species <- unique(forestgrower::params_default$prices$spp)[
   c(11, 21, 23, 25, 52, 54, 55, 58, 68, 73, 75)]
 
+# define the softwoods
+sw <- species[c(2, 4, 8, 10)]
+
 dbhs <- seq(4, 22, by = 3)
 
 crs <- seq(20, 70, by = 10)
@@ -27,7 +30,7 @@ crs <- seq(20, 70, by = 10)
 
 # list combinations for bottom 3 (8') log segments, which drive
 # tree values
-grades <- c("112", "122", "155", "515",
+grades <- c("112", "122", "215", "155", "515",
             "222", "225", "255", "525",
             "333", "355", "555")
 # concatenate potential grades, assuming all segments above bottom three are
@@ -63,10 +66,15 @@ sites <- list(
 
 # compile dataset ##############################################################
 dat <- expand.grid(spp = species, dbh = dbhs, cr = crs, logs = grades) |>
+  # remove softwood trees with veneer
+  dplyr::filter(!(spp %in% sw & grepl("1", logs))) |>
   # assume the tree in question is alone in the plot. 24.07 is scalar to convert
   # ba/plot to ba/acre
-  dplyr::mutate(tpa = 24.07, ba_ac = (0.005454 * dbh ^ 2) * tpa, cumsurv = 1,
+  dplyr::mutate(spp = as.character(spp), logs = as.character(logs),
+                tpa = 24.07, ba_ac = (0.005454 * dbh ^ 2) * tpa, cumsurv = 1,
                 ba = ba_ac, bal = 0)
+# make upper bolts sawlogs in softwoods
+substr(dat$logs[dat$spp %in% sw], 4, 10) <- "2222222"
 
 dat <- lapply(sites, function(x) {
   # add site attributes
@@ -78,10 +86,8 @@ dat <- lapply(sites, function(x) {
 })
 dat <- do.call(rbind, dat)
 dat$tree <- dat$plot <- dat$stand <- 1:nrow(dat)
-dat$spp <- as.character(dat$spp)
-dat$logs <- as.character(dat$logs)
 dat$live <- TRUE
-dat$sw <- treemodeler::softwood(dat$spp)
+dat$sw <- dat$spp %in% sw
 
 
 # set parameters to guide simulations ##########################################
@@ -93,6 +99,7 @@ for (i in unique(params$prices$spp)) {
   p <- params$prices[idx, ][1, ]
   params$prices <- rbind(params$prices[!idx, ], p)
 }
+rm(p, idx)
 
 # mill prices based on Jan 2025 Log Street Journal reports for NY, VT, NH, ME,
 # Canada
