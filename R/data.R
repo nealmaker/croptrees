@@ -123,14 +123,14 @@ rm(p, idx)
 # species within each group vary relative to one-another.
 params$prices$mill_grade2[params$prices$spp_grp == "mvh"] <- 406
 params$prices$mill_grade2[params$prices$spp_grp == "hvh"] <- 456
-params$prices$mill_grade2[params$prices$spp_grp == "pine_hem"] <- 285
-params$prices$mill_grade2[params$prices$spp_grp == "sw"] <- 370
+params$prices$mill_grade2[params$prices$spp_grp == "pine_hem"] <- 400 # 285 is right; this is a test
+params$prices$mill_grade2[params$prices$spp_grp == "sw"] <- 400 # 370 is right; this is a test
 
 # pulp/firewood prices of 125/mbf for hardwoods & 45/mbf for softwoods, roadside
 # (~$62.50/cd & $18/ton, respectively) based on 2024 Pekin Branch Forestry
 # records.
 params$prices$pulp_roadside <- 125
-params$prices$pulp_roadside[treemodeler::softwood(params$prices$spp, mods)] <- 45
+params$prices$pulp_roadside[treemodeler::softwood(params$prices$spp, mods)] <- 10 # 45 is right; this is a test
 
 # stumpage equation uses trucking cost of $75/mbf (from 2024 Pekin Branch
 # Forestry records) and estimates that stumpage ($/mbf) = .6 * (roadside price -
