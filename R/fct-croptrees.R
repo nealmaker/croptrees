@@ -14,6 +14,12 @@ crop_trees <- function(data, rate, price_factor) {
                      dbh = dbh[year == 0],
                      cr = cr[year == 0],
                      logs = logs[year == 0],
+                     best_log = best_log[year == 0],
+                     worst_log = worst_log[year == 0],
+                     butt_log = butt_log[year == 0],
+                     veneer_present = veneer_present[year == 0],
+                     saw_present = saw_present[year == 0],
+                     quality_score = quality_score[year == 0],
                      site = site[1],
                      # has to be worth growing at least 15 more years to be crop
                      crop = max(pv) > pv[year == 0] &
@@ -22,5 +28,7 @@ crop_trees <- function(data, rate, price_factor) {
     dplyr::mutate(drate = rate,
                   price_factor = price_factor,
                   spp = mods$canonical_feature_spec$categories$spp[spp]) |>
-    dplyr::select(spp, dbh, cr, logs, site, drate, price_factor, crop)
+    dplyr::select(spp, dbh, cr, logs, best_log, worst_log,
+                  butt_log, veneer_present, saw_present, quality_score,
+                  site, drate, price_factor, crop)
 }
