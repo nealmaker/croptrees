@@ -187,6 +187,26 @@ pdp_int_plot <- ggplot(pdp_interaction, aes(x = dbh, y = cr, fill = yhat)) +
 print(pdp_int_plot)
 ggsave("output/base-rate-rf-analysis/03_interaction_dbh_cr.png", pdp_int_plot, width = 8, height = 6)
 
+# Two-way interaction: DBH x Quality Score
+cat("\nCreating second 2-way interaction plot (this may take a moment)...\n")
+pdp_interaction2 <- partial(rf_engine,
+                            pred.var = c("dbh", "quality_score"),
+                            train = data,
+                            pred.fun = pred_wrapper,
+                            grid.resolution = 15)
+
+pdp_int_plot2 <- ggplot(pdp_interaction2, aes(x = dbh, y = quality_score, fill = yhat)) +
+  geom_tile() +
+  geom_contour(aes(z = yhat), color = "white", alpha = 0.8) +
+  scale_fill_viridis_c(name = "P(Crop Tree)", option = "viridis", labels = scales::percent) +
+  labs(title = "Interaction: DBH × Quality",
+       x = "DBH (inches)",
+       y = "Quality Score") +
+  theme_minimal()
+
+print(pdp_int_plot2)
+ggsave("output/base-rate-rf-analysis/04_interaction_dbh_quality.png", pdp_int_plot2, width = 8, height = 6)
+
 # ============================================================================
 # 5. CATEGORICAL VARIABLE ANALYSIS
 # ============================================================================
@@ -259,7 +279,7 @@ cat_combined <- (p_species + p_site) / p_veneer +
   plot_annotation(title = "Crop Tree Rates by Categorical Variables")
 
 print(cat_combined)
-ggsave("output/base-rate-rf-analysis/04_categorical_analysis.png", cat_combined, width = 12, height = 10)
+ggsave("output/base-rate-rf-analysis/05_categorical_analysis.png", cat_combined, width = 12, height = 10)
 
 # ============================================================================
 # 6. MULTIDIMENSIONAL VISUALIZATION
@@ -281,7 +301,7 @@ p_facet_species <- ggplot(data, aes(x = dbh, y = cr, fill = crop)) +
   theme(legend.position = "bottom")
 
 print(p_facet_species)
-ggsave("output/base-rate-rf-analysis/05_dbh_cr_by_species.png", p_facet_species, width = 14, height = 10)
+ggsave("output/base-rate-rf-analysis/06_dbh_cr_by_species.png", p_facet_species, width = 14, height = 10)
 
 # DBH x Crown Ratio faceted by site
 p_facet_site <- ggplot(data, aes(x = dbh, y = cr, fill = crop)) +
@@ -297,7 +317,7 @@ p_facet_site <- ggplot(data, aes(x = dbh, y = cr, fill = crop)) +
   theme(legend.position = "bottom")
 
 print(p_facet_site)
-ggsave("output/base-rate-rf-analysis/06_dbh_cr_by_site.png", p_facet_site, width = 10, height = 8)
+ggsave("output/base-rate-rf-analysis/07_dbh_cr_by_site.png", p_facet_site, width = 10, height = 8)
 
 # Quality score effect across species
 p_quality_species <- ggplot(data, aes(x = quality_score, fill = crop)) +
@@ -314,7 +334,7 @@ p_quality_species <- ggplot(data, aes(x = quality_score, fill = crop)) +
   theme(legend.position = "bottom")
 
 print(p_quality_species)
-ggsave("output/base-rate-rf-analysis/07_quality_by_species.png", p_quality_species, width = 14, height = 10)
+ggsave("output/base-rate-rf-analysis/08_quality_by_species.png", p_quality_species, width = 14, height = 10)
 
 # ============================================================================
 # 7. LOG QUALITY DECOMPOSITION ANALYSIS
@@ -404,7 +424,7 @@ log_quality_combined <- p_butt + p_best + p_veneer + p_saw +
   plot_annotation(title = "Crop Tree Rates by Log Quality Components")
 
 print(log_quality_combined)
-ggsave("output/base-rate-rf-analysis/08_log_quality_components.png", log_quality_combined,
+ggsave("output/base-rate-rf-analysis/09_log_quality_components.png", log_quality_combined,
        width = 12, height = 12)
 
 # Actual Log Calls
@@ -429,7 +449,7 @@ p_logs <- ggplot(logs_summary, aes(x = reorder(logs, crop_rate), y = crop_rate))
   theme_minimal()
 
 print(p_logs)
-ggsave("output/base-rate-rf-analysis/09_log_grade_analysis.png", p_logs, width = 6, height = 8)
+ggsave("output/base-rate-rf-analysis/10_log_grade_analysis.png", p_logs, width = 6, height = 8)
 # ============================================================================
 # 8. MODEL PREDICTIONS AND CONFUSION ANALYSIS
 # ============================================================================
@@ -457,7 +477,7 @@ autoplot(conf_mat, type = "heatmap") +
   scale_fill_gradient(low = "white", high = "steelblue") +
   labs(title = "Confusion Matrix: Crop Tree Classification") +
   theme_minimal()
-ggsave("output/base-rate-rf-analysis/10_confusion_matrix.png", width = 8, height = 6)
+ggsave("output/base-rate-rf-analysis/11_confusion_matrix.png", width = 8, height = 6)
 
 # Analyze misclassifications
 misclassified <- data_with_pred %>%
@@ -487,7 +507,7 @@ if (nrow(misclassified) > 0) {
     theme(legend.position = "bottom")
 
   print(p_misclass)
-  ggsave("output/base-rate-rf-analysis/11_misclassifications.png", p_misclass, width = 14, height = 10)
+  ggsave("output/base-rate-rf-analysis/12_misclassifications.png", p_misclass, width = 14, height = 10)
 }
 
 # ============================================================================
