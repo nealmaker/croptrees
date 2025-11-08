@@ -407,6 +407,29 @@ print(log_quality_combined)
 ggsave("output/base-rate-rf-analysis/08_log_quality_components.png", log_quality_combined,
        width = 12, height = 12)
 
+# Actual Log Calls
+logs_summary <- data %>%
+  group_by(logs) %>%
+  summarize(
+    n = n(),
+    crop_rate = mean(crop == "TRUE"),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(crop_rate))
+
+p_logs <- ggplot(logs_summary, aes(x = reorder(logs, crop_rate), y = crop_rate)) +
+  geom_col(fill = "gray25", alpha = 0.8) +
+  geom_text(aes(label = scales::percent(crop_rate, accuracy = 0.1)),
+            hjust = -0.2, size = 3) +
+  coord_flip() +
+  scale_y_continuous(labels = scales::percent, limits = c(0, 1)) +
+  labs(title = "Crop Tree Rate by Grade Calls",
+       x = "Grades",
+       y = "Proportion Crop Trees") +
+  theme_minimal()
+
+print(p_logs)
+ggsave("output/base-rate-rf-analysis/09_log_grade_analysis.png", p_logs, width = 6, height = 8)
 # ============================================================================
 # 8. MODEL PREDICTIONS AND CONFUSION ANALYSIS
 # ============================================================================
@@ -434,7 +457,7 @@ autoplot(conf_mat, type = "heatmap") +
   scale_fill_gradient(low = "white", high = "steelblue") +
   labs(title = "Confusion Matrix: Crop Tree Classification") +
   theme_minimal()
-ggsave("output/base-rate-rf-analysis/09_confusion_matrix.png", width = 8, height = 6)
+ggsave("output/base-rate-rf-analysis/10_confusion_matrix.png", width = 8, height = 6)
 
 # Analyze misclassifications
 misclassified <- data_with_pred %>%
@@ -464,7 +487,7 @@ if (nrow(misclassified) > 0) {
     theme(legend.position = "bottom")
 
   print(p_misclass)
-  ggsave("output/base-rate-rf-analysis/10_misclassifications.png", p_misclass, width = 14, height = 10)
+  ggsave("output/base-rate-rf-analysis/11_misclassifications.png", p_misclass, width = 14, height = 10)
 }
 
 # ============================================================================
