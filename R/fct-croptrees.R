@@ -10,7 +10,8 @@ crop_trees <- function(data, rate, price_factor) {
   data$pv <- data$value / (1 + rate) ^ data$year
 
   out <- data |> dplyr::group_by(tree) |>
-    dplyr::summarize(spp = spp[1],
+    dplyr::summarize(sw = sw[1],
+                     spp = spp[1],
                      dbh = dbh[year == 0],
                      cr = cr[year == 0],
                      logs = logs[year == 0],
@@ -28,7 +29,7 @@ crop_trees <- function(data, rate, price_factor) {
     dplyr::mutate(drate = rate,
                   price_factor = price_factor,
                   spp = mods$canonical_feature_spec$categories$spp[spp]) |>
-    dplyr::select(spp, dbh, cr, logs, best_log, worst_log,
+    dplyr::select(spp, sw, dbh, cr, logs, best_log, worst_log,
                   butt_log, veneer_present, saw_present, quality_score,
                   site, drate, price_factor, crop)
 }

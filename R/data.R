@@ -66,8 +66,9 @@ sites <- list(
 
 # compile dataset ##############################################################
 dat <- expand.grid(spp = species, dbh = dbhs, cr = crs, logs = grades) |>
-  # remove softwood trees with veneer
-  dplyr::filter(!(spp %in% sw & grepl("1", logs))) |>
+  # remove softwood trees with veneer or tie logs
+  dplyr::filter(!(spp %in% sw & grepl("1", logs)),
+                !(spp %in% sw & grepl("3", logs))) |>
   # assume the tree in question is alone in the plot. 24.07 is scalar to convert
   # ba/plot to ba/acre
   dplyr::mutate(spp = as.character(spp), logs = as.character(logs),
@@ -137,12 +138,17 @@ params$prices$pulp_roadside[treemodeler::softwood(params$prices$spp, mods)] <- 4
 # $60). This is a reasonable estimate for a higher value operation, in the
 # experience of Maker and Foppert.
 params$truckcost <- 75
-params$stump <- timbertally::stump_factory(.6, 60, method = "linear")
+# params$stump <- timbertally::stump_factory(.6, 60, method = "linear")
+
+params$stump <- function(roadside, ...) {
+  x <- .6 * (roadside - 20.833333333333333333333)
+  pmax(x, 0)
+}
 
 # dbh at which to stop growing any given tree
-max_dbh <- 30
+max_dbh <- 40
 # max simulation length in years
-params$endyr <- 200
+params$endyr <- 250
 
 
 # encode species to match models ###############################################
@@ -153,16 +159,25 @@ params$prices <-
   treemodeler::encode_simulation_inputs(params$prices, mods$region,
                                         mods$canonical_feature_spec)
 
-# add values to data now that params are set ###################################
-dat$value <- timbertally::stumpage(dat, params$stump, params,
-                                   params$truckcost, mods)
-
-
 # write simulator function #####################################################
 
 # returns data frame of trees at each timestep and their undiscounted values
 get_values <- function(dat, params, max_dbh, mods) {
-  sim <- dat <- dat |> dplyr::mutate(year = 0)
+  sim <- dat <- dat |> dplyr::mutate(year = 0, cumsurv = 1)
+  logs_sim <- timbertally::make_logs(sim, mods, params) |>
+    dplyr::mutate(year = 0)
+  logs_sim$roadside <- timbertally::get_roadside(logs_sim, params$prices, params$truckcost)
+  logs_sim$stumprt <- params$stump(logs_sim$roadside, spp = logs_sim$spp)
+
+  trees_bind <- logs_sim |> dplyr::group_by(tree) |>
+    dplyr::summarise(volume_nomort = sum(vol_log),
+                     value_nomort = sum(stumprt * vol_log))
+
+  sim <- dplyr::left_join(sim, trees_bind, by = "tree")
+  sim$volume_nomort[is.na(sim$volume_nomort)] <- 0
+  sim$value_nomort[is.na(sim$value_nomort)] <- 0
+  sim$value <- sim$value_nomort * sim$cumsurv
+
   year <- 0
   repeat {
     year <- year + params$steplength
@@ -192,16 +207,28 @@ get_values <- function(dat, params, max_dbh, mods) {
       ) |>
       dplyr::select(!crown_base)
 
+    logs_new <- timbertally::make_logs(dat_new, mods, params) |>
+      dplyr::mutate(year = year)
+    logs_new$roadside <- timbertally::get_roadside(logs_new, params$prices, params$truckcost)
+    logs_new$stumprt <- params$stump(logs_new$roadside, spp = logs_new$spp)
+
+    trees_bind <- logs_new |> dplyr::group_by(tree) |>
+      dplyr::summarise(volume_nomort = sum(vol_log),
+                       value_nomort = sum(stumprt * vol_log))
+
     # get undiscounted stumpage values, modified by cumulative probability of
     # survival
-    dat_new$value = timbertally::stumpage(dat_new, params$stump, params, params$truckcost, mods) *
-      dat_new$cumsurv
+    dat_new <- dplyr::left_join(dat_new, trees_bind, by = "tree")
+    dat_new$volume_nomort[is.na(dat_new$volume_nomort)] <- 0
+    dat_new$value_nomort[is.na(dat_new$value_nomort)] <- 0
+    dat_new$value <- dat_new$value_nomort * dat_new$cumsurv
 
     # add data for new timestep to data for previous timesteps
     sim <- rbind(sim, dat_new)
+    logs_sim <- rbind(logs_sim, logs_new)
 
     if (all(dat$dbh >= max_dbh)) break
     if (year > params$endyr) break
   }
-  return(sim)
+  return(list(trees = sim, logs = logs_sim))
 }
