@@ -1,3 +1,7 @@
+# use realistic stumpage prices for the base analysis
+stupper <- T
+pulppositive <- F
+
 source("R/simulation.R")
 source("R/fct-croptrees.R")
 

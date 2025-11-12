@@ -5,6 +5,12 @@ requireNamespace("magrittr")
 requireNamespace("dplyr")
 requireNamespace("tidyr")
 
+################################################################################
+# VARS DEFINED PREVIOUSLY:
+# - stupper (T/F, sw trees have ST in upper bolt sections)
+# - pulppositive (T/F, should stumpage be such that pulp rates remain >0)
+################################################################################
+
 # load models ##################################################################
 options("treemodeler.registry_path" = "C:/Users/neal/projects/forestmaker-models")
 mods <- treemodeler::initialize_models("5.3", c("base", "base", "slim"),
@@ -74,8 +80,10 @@ dat <- expand.grid(spp = species, dbh = dbhs, cr = crs, logs = grades) |>
   dplyr::mutate(spp = as.character(spp), logs = as.character(logs),
                 tpa = 24.07, ba_ac = (0.005454 * dbh ^ 2) * tpa, cumsurv = 1,
                 ba = ba_ac, bal = 0)
-# make upper bolts sawlogs in softwoods
-substr(dat$logs[dat$spp %in% sw], 4, 10) <- "2222222"
+if(stupper) {
+  # make upper bolts sawlogs in softwoods
+  substr(dat$logs[dat$spp %in% sw], 4, 10) <- "2222222"
+}
 
 dat <- lapply(sites, function(x) {
   # add site attributes
@@ -140,9 +148,18 @@ params$prices$pulp_roadside[treemodeler::softwood(params$prices$spp, mods)] <- 4
 params$truckcost <- 75
 # params$stump <- timbertally::stump_factory(.6, 60, method = "linear")
 
-params$stump <- function(roadside, ...) {
-  x <- .6 * (roadside - 20.833333333333333333333)
-  pmax(x, 0)
+if (pulppositive) {
+  # stumpage rate changed to keep pulp rate > 0
+  params$stump <- function(roadside, ...) {
+    x <- .6 * (roadside - 20) # 20.83333333 subtractor is breakeven
+    pmax(x, 0)
+  }
+} else {
+  # actual expected stumpage rate
+  params$stump <- function(roadside, ...) {
+    x <- .6 * (roadside - 60)
+    pmax(x, 0)
+  }
 }
 
 # dbh at which to stop growing any given tree
@@ -161,11 +178,43 @@ params$prices <-
 
 # write simulator function #####################################################
 
+# rebuild make_logs function to save log sections
+make_logs2 <- function(trees, model_cache, params) {
+  grade_thresholds <- params$prices[, c(1, 5:9)]
+  logs <- timbertally::section_logs(trees, model_cache) |>
+    # collapse section columns into "section" and "max grade" columns:
+    tidyr::gather(section, max_grade, grade1, grade2, grade3, grade4, grade5,
+                  grade6, grade7, grade8, grade9, grade10) |>
+    # Estimate dib for each section
+    dplyr::mutate(section = as.numeric(stringr::str_extract(section, "\\d+")),
+                  max_grade = as.numeric(max_grade),
+                  dib = treemodeler::predict_dib(spp, dbh, height,
+                                                 1 + (8.5 * as.numeric(section)), # bolt height function
+                                                 model_cache),
+                  dib = pmax(dib, 0),
+                  dib = ifelse(is.na(dib), 0, dib)) |>
+    dplyr::left_join(grade_thresholds, by = "spp") |>
+    # add log volumes with 1/4" international rule, convert to cords,
+    # & scale up to per acre
+    dplyr::mutate(vol_log = timbertally::volume(dib)/500, # 500 bf/cd
+                  vol_log = pmax(vol_log, 0),
+                  vol_log = ifelse(is.na(vol_log), 0, vol_log),
+                  vol_ac = vol_log * tpa,
+                  current_grade =
+                    timbertally::current_grade(spp, dib, max_grade, params)) |>
+    dplyr::filter(max_grade %in% 0:5, dib >= 4) |>
+    dplyr::select(section, tree, plot, stand, spp, tpa, max_grade,
+                  current_grade, dib, vol_log, vol_ac)
+
+  return(logs)
+}
+
 # returns data frame of trees at each timestep and their undiscounted values
 get_values <- function(dat, params, max_dbh, mods) {
   sim <- dat <- dat |> dplyr::mutate(year = 0, cumsurv = 1)
-  logs_sim <- timbertally::make_logs(sim, mods, params) |>
+  logs_sim <- make_logs2(sim, mods, params) |>
     dplyr::mutate(year = 0)
+
   logs_sim$roadside <- timbertally::get_roadside(logs_sim, params$prices, params$truckcost)
   logs_sim$stumprt <- params$stump(logs_sim$roadside, spp = logs_sim$spp)
 
@@ -207,7 +256,7 @@ get_values <- function(dat, params, max_dbh, mods) {
       ) |>
       dplyr::select(!crown_base)
 
-    logs_new <- timbertally::make_logs(dat_new, mods, params) |>
+    logs_new <- make_logs2(dat_new, mods, params) |>
       dplyr::mutate(year = year)
     logs_new$roadside <- timbertally::get_roadside(logs_new, params$prices, params$truckcost)
     logs_new$stumprt <- params$stump(logs_new$roadside, spp = logs_new$spp)
