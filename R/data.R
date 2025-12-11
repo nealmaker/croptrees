@@ -1,9 +1,9 @@
-requireNamespace("forestgrower")
-requireNamespace("treemodeler")
-requireNamespace("timbertally")
-requireNamespace("magrittr")
-requireNamespace("dplyr")
-requireNamespace("tidyr")
+library("forestgrower")
+library("treemodeler")
+library("timbertally")
+library("magrittr")
+library("dplyr")
+library("tidyr")
 
 ################################################################################
 # VARS DEFINED PREVIOUSLY:
