@@ -48,8 +48,14 @@ for (site_type in unique(crops_all$site)) {
       # Fit tree and save outputs
       tree_obj <- decision_tree(subset_data)
 
-      # Store in list with informative name
-      result_name <- attr(tree_obj, "name")
+      # Store in list - use the name from the object
+      if (inherits(tree_obj, "rpart")) {
+        # It's an actual tree
+        result_name <- attr(tree_obj, "name")
+      } else {
+        # It's an edge case list
+        result_name <- tree_obj$name
+      }
       results[[result_name]] <- tree_obj
     }
   }
