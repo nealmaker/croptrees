@@ -56,8 +56,8 @@ sites <- list(
 
   # beech-red maple hardwood site on convex mountain slope in Bartlett NH,
   # Monadnock very stony granitic till soils.
-  # LEFT OUT BECAUSE IT'S VERY SIMILAR TO GRANITIC TILL
-  # mountaintill = list(lat = 44.094, lon = -71.268, site_class = 5, elev = 1500),
+  # VERY SIMILAR TO GRANITIC TILL, BUT BETTER IN TERMS OF HW SITE SPECTRUM
+  mountaintill = list(lat = 44.094, lon = -71.268, site_class = 5, elev = 1500),
 
   # lowland spruce-fir site on poorly-drained Brayton lodgment till soil in
   # Dallas Maine.

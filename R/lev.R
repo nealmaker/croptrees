@@ -37,10 +37,10 @@ sitetabs <- lapply(sites, function(i) {
                  logs == "2225555555")$tree
     t3 <- filter(sim$trees, site == i, year == 0, dbh == 4, cr == 30,
                  spp == which(mods$canonical_feature_spec$categories$spp == "YB"), # yellow birch
-                 logs == "2155555555")$tree
+                 logs == "1225555555")$tree
     treeids <- c(t1, t2, t3)
     trees <- filter(sim$trees, tree %in% treeids)
-    weights <- c(.45, .45, .1)
+    weights <- c(.45, .25, .3)
   } else if (i == "richnhw") {
     t1 <- filter(sim$trees, site == i, year == 0, dbh == 4, cr == 30,
                  spp == which(mods$canonical_feature_spec$categories$spp == "BM"), # sugar maple
@@ -53,7 +53,20 @@ sitetabs <- lapply(sites, function(i) {
                  logs == "2225555555")$tree
     treeids <- c(t1, t2, t3)
     trees <- filter(sim$trees, tree %in% treeids)
-    weights <- c(.55, .35, .1)
+    weights <- c(.6, .35, .05)
+  } else if (i == "mountaintill") {
+    t1 <- filter(sim$trees, site == i, year == 0, dbh == 4, cr == 30,
+                 spp == which(mods$canonical_feature_spec$categories$spp == "BM"), # sugar maple
+                 logs == "1225555555")$tree
+    t2 <- filter(sim$trees, site == i, year == 0, dbh == 7, cr == 30,
+                 spp == which(mods$canonical_feature_spec$categories$spp == "YB"), # yellow birch
+                 logs == "1225555555")$tree
+    t3 <- filter(sim$trees, site == i, year == 0, dbh == 4, cr == 30,
+                 spp == which(mods$canonical_feature_spec$categories$spp == "RM"), # red maple
+                 logs == "2225555555")$tree
+    treeids <- c(t1, t2, t3)
+    trees <- filter(sim$trees, tree %in% treeids)
+    weights <- c(.35, .35, .3)
   } else if (i == "lowlandspfr") {
     t1 <- filter(sim$trees, site == i, year == 0, dbh == 4, cr == 50,
                  spp == which(mods$canonical_feature_spec$categories$spp == "RS"), # red spruce
@@ -73,7 +86,7 @@ sitetabs <- lapply(sites, function(i) {
                  logs == "1225555555")$tree
     t2 <- filter(sim$trees, site == i, year == 0, dbh == 7, cr == 30,
                  spp == which(mods$canonical_feature_spec$categories$spp == "WO"), # white oak (Q. alba)
-                 logs == "2155555555")$tree
+                 logs == "1225555555")$tree
     t3 <- filter(sim$trees, site == i, year == 0, dbh == 4, cr == 30,
                  spp == which(mods$canonical_feature_spec$categories$spp == "BM"), # sugar maple
                  logs == "1225555555")$tree
@@ -83,18 +96,19 @@ sitetabs <- lapply(sites, function(i) {
   }
 
   drate_tabs <- lapply(drates, function(j) {
-    trees$npv <- trees$value / ((1 + j) ^ trees$year)
+    # Trees start at about 20 yrs old, but want NPV age 0
+    trees$npv <- trees$value / ((1 + j) ^ (trees$year + 20))
     spp_tabs <- lapply(treeids, function(k) {
       onetree <- trees[trees$tree == k, ]
       npv <- max(onetree$npv)
       rotation <- onetree$year[which(onetree$npv == npv)]
-      lev <- npv / (1 - ((1 + j) ^ -rotation))
+      lev <- npv / (1 - ((1 + j) ^ -(rotation + 20)))
 
       repeat {
         if (rotation < 2 * params$steplength) break
         rotation <- rotation - params$steplength
         npv <- onetree$npv[which(onetree$year == rotation)]
-        lev2 <- npv / (1 - ((1 + j) ^ -rotation))
+        lev2 <- npv / (1 - ((1 + j) ^ -(rotation + 20)))
 
         if (lev > lev2) break
 

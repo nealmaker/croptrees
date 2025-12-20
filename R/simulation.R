@@ -24,9 +24,9 @@ sim <- get_values(dat, params, max_dbh, mods)
 sim$trees <- sim$trees |>
   dplyr::mutate(site = dplyr::case_when(lat == 44.463 ~ "granitictill",
                                         lat == 44.316 ~ "richnhw",
+                                        lat == 44.094 ~ "mountaintill",
                                         lat == 45.009 ~ "lowlandspfr",
-                                        TRUE ~ "clayplain"),
-                best_log = min(as.numeric())) |>
+                                        TRUE ~ "clayplain")) |>
   dplyr::select(tree, sw, spp, dbh, cr, logs, site, volume_nomort, value_nomort,
                 value, year)
 

@@ -5,9 +5,15 @@
 
 #price_factor is a multiplier (2 is rates are twice the 2025 base rate used to
 #do sim, 0.5 is half, ...)
-crop_trees <- function(data, rate, price_factor) {
+
+# levs is lookup table of LEVs
+crop_trees <- function(data, rate, price_factor, levs) {
+  data$drate <- rate
+  data <- dplyr::left_join(data, levs, by = c("site", "drate"))
   data$value <- data$value * price_factor
-  data$pv <- data$value / (1 + rate) ^ data$year
+  # PV is present value if cut @ t = data$year: includes LEV captured when cut
+  data$pv <- (data$value / (1 + rate) ^ data$year) +
+    (data$lev / (1 + rate) ^ data$year)
 
   out <- data |> dplyr::group_by(tree) |>
     dplyr::summarize(sw = sw[1],
