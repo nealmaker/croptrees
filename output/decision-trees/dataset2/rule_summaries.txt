@@ -1,5 +1,5 @@
 ## BM
-**Base rule (3% discount rate):** Crop tree if DBH <= 13" for any log grade, or DBH <= 14" if veneer-quality (grade 1)
+**Base rule (3% discount rate):** Crop tree if DBH <= 13" for sawtimber or veneer, or DBH <= 14" if veneer-quality
 Requires crown ratio >= 35%
 
 **Discount rate adjustment:** Max DBH decreases by ~0.8" for each 1% increase in discount rate
@@ -7,7 +7,7 @@ Requires crown ratio >= 35%
 **Site adjustments:**
 - granitictill: -0.8" to max DBH
 ## PB
-**Base rule (3% discount rate):** Crop tree only if veneer-quality (grade 1) and DBH <= 16"
+**Base rule (3% discount rate):** Crop tree only if veneer-quality and DBH <= 16"
 Requires crown ratio >= 45%
 *Sawlog-quality trees are not crop trees.*
 
@@ -19,8 +19,8 @@ Requires crown ratio >= 45%
 - richnhw: -0.8" to max DBH
 ## RM
 **Base rule (3% discount rate):** Crop tree if:
-- Veneer-quality (grade 1): DBH <= 17"
-- Sawlog-quality (grade 2): DBH <= 14"
+- Veneer-quality: DBH <= 17"
+- Sawlog-quality: DBH <= 14"
 Requires crown ratio >= 25%
 
 **Discount rate adjustment:** Max DBH decreases by ~1" for each 1% increase in discount rate
@@ -33,7 +33,7 @@ Requires crown ratio >= 25%
 **Base rule (3% discount rate):**
 - With crown ratio >= 35%: DBH <= 18"
 - With crown ratio < 35%: DBH <= 13"
-- **Veneer bonus:** Veneer-quality trees (grade 1) can be +4" larger
+- **Veneer bonus:** Veneer-quality trees can be +4" larger
 
 **Discount rate adjustment:** Max DBH decreases by ~1.1" for each 1% increase in discount rate
 
@@ -45,7 +45,7 @@ Requires crown ratio >= 25%
 **Base rule (3% discount rate):**
 - With crown ratio >= 35%: DBH <= 19"
 - With crown ratio < 35%: DBH <= 13"
-- **Veneer bonus:** Veneer-quality trees (grade 1) can be +5" larger
+- **Veneer bonus:** Veneer-quality trees can be +5" larger
 
 **Discount rate adjustment:** Max DBH decreases by ~1.4" for each 1% increase in discount rate
 
