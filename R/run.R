@@ -8,6 +8,7 @@ drates <- seq(.02, .06, by = .01)
 source("R/data.R")
 source("R/simulation.R")
 source("R/lev.R")
+saveRDS(lev_lookup, file = "output/lev_lookup.rds")
 source("R/fct-croptrees.R")
 
 # start with a default discount rate and price factor ##########################
@@ -115,6 +116,7 @@ pulppositive <- F
 # range of discount rates to try
 drates <- seq(.02, .06, by = .01)
 
+if (!exists("lev_lookup")) lev_lookup <- readRDS("output/lev_lookup.rds")
 source("R/data2.R")
 source("R/simulation.R")
 source("R/fct-croptrees.R")
@@ -177,114 +179,8 @@ source("R/evaluate-simplified-rules.R")
 ################################################################################
 # Sensitivity analyses for mortality, price factor, & LEV
 ################################################################################
+# This runs a comprehensive sensitivity analysis comparing crop tree
+# classifications under different factor assumptions to the base rules.
+# Results are saved to output/sensitivity-analysis/
 
-# Mortality Sensitivity: try 75% mortality #####################################
-# set new directory for output
-outdir <- "dat2_mort75pct"
-
-# keep default drate and price factor ########################
-crops_all <- crop_trees(sim$trees, .03, 1, levs = lev_lookup, mortality_factor = .75)
-
-results <- list()
-
-for (site_type in unique(crops_all$site)) {
-  for (species in unique(crops_all$spp[crops_all$site == site_type])) {
-    for (rate in unique(crops_all$drate[crops_all$site == site_type & crops_all$spp == species])) {
-
-      # Filter to this combination
-      subset_data <- crops_all %>%
-        dplyr::filter(spp == species, site == site_type, drate == rate) |>
-        dplyr::select(spp, dbh, cr, best_log, site, drate, crop)
-
-      # Skip if no data for this combination
-      if (nrow(subset_data) == 0) next
-
-      # Fit tree and save outputs
-      tree_obj <- decision_tree(subset_data, outdir = outdir)
-
-      # Store in list - use the name from the object
-      if (inherits(tree_obj, "rpart")) {
-        # It's an actual tree
-        result_name <- attr(tree_obj, "name")
-      } else {
-        # It's an edge case list
-        result_name <- tree_obj$name
-      }
-      results[[result_name]] <- tree_obj
-    }
-  }
-}
-
-# Mortality Sensitivity: try 50% mortality #####################################
-# set new directory for output
-outdir <- "dat2_mort50pct"
-
-# keep default drate and price factor ########################
-crops_all <- crop_trees(sim$trees, .03, 1, levs = lev_lookup, mortality_factor = .5)
-
-results <- list()
-
-for (site_type in unique(crops_all$site)) {
-  for (species in unique(crops_all$spp[crops_all$site == site_type])) {
-    for (rate in unique(crops_all$drate[crops_all$site == site_type & crops_all$spp == species])) {
-
-      # Filter to this combination
-      subset_data <- crops_all %>%
-        dplyr::filter(spp == species, site == site_type, drate == rate) |>
-        dplyr::select(spp, dbh, cr, best_log, site, drate, crop)
-
-      # Skip if no data for this combination
-      if (nrow(subset_data) == 0) next
-
-      # Fit tree and save outputs
-      tree_obj <- decision_tree(subset_data, outdir = outdir)
-
-      # Store in list - use the name from the object
-      if (inherits(tree_obj, "rpart")) {
-        # It's an actual tree
-        result_name <- attr(tree_obj, "name")
-      } else {
-        # It's an edge case list
-        result_name <- tree_obj$name
-      }
-      results[[result_name]] <- tree_obj
-    }
-  }
-}
-
-# Mortality Sensitivity: now try 0% mortality ##################################
-# set new directory for output
-outdir <- "dat2_mort0pct"
-
-# keep default drate and price factor ########################
-crops_all <- crop_trees(sim$trees, .03, 1, levs = lev_lookup, mortality_factor = .5)
-
-results <- list()
-
-for (site_type in unique(crops_all$site)) {
-  for (species in unique(crops_all$spp[crops_all$site == site_type])) {
-    for (rate in unique(crops_all$drate[crops_all$site == site_type & crops_all$spp == species])) {
-
-      # Filter to this combination
-      subset_data <- crops_all %>%
-        dplyr::filter(spp == species, site == site_type, drate == rate) |>
-        dplyr::select(spp, dbh, cr, best_log, site, drate, crop)
-
-      # Skip if no data for this combination
-      if (nrow(subset_data) == 0) next
-
-      # Fit tree and save outputs
-      tree_obj <- decision_tree(subset_data, outdir = outdir)
-
-      # Store in list - use the name from the object
-      if (inherits(tree_obj, "rpart")) {
-        # It's an actual tree
-        result_name <- attr(tree_obj, "name")
-      } else {
-        # It's an edge case list
-        result_name <- tree_obj$name
-      }
-      results[[result_name]] <- tree_obj
-    }
-  }
-}
+source("R/sensitivity-analysis.R")
