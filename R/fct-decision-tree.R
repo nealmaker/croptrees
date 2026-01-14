@@ -1,7 +1,9 @@
 # Function to build and save a decision tree for pre-filtered data, which must
 # include drate, spp, and site as variables, in addition to any predictors that
 # will be used.
-decision_tree <- function(data) {
+
+# outdir is name of directory to save output to
+decision_tree <- function(data, outdir = "dataset1") {
   # Load required packages
   require(rpart)
   require(grid)
@@ -30,7 +32,8 @@ decision_tree <- function(data) {
     message(paste0("No crop trees found for ", spp, " on ", site, " at ", drate_pct, "% discount rate"))
 
     # Create filename base
-    file_base <- paste0("output/decision-trees/dt_", spp, "_", site, "_", drate_pct, "pct")
+    file_base <- paste0("output/decision-trees/", outdir, "/dt_", spp,
+                        "_", site, "_", drate_pct, "pct")
 
     # Save a placeholder RDS (NULL or a note)
     saveRDS(list(
@@ -70,7 +73,7 @@ decision_tree <- function(data) {
     message(paste0("All trees are crop trees for ", spp, " on ", site, " at ", drate_pct, "% discount rate"))
 
     # Create filename base
-    file_base <- paste0("output/decision-trees/dt_", spp, "_", site, "_", drate_pct, "pct")
+    file_base <- paste0("output/decision-trees/", outdir, "/dt_", spp, "_", site, "_", drate_pct, "pct")
 
     # Save a placeholder RDS
     saveRDS(list(
@@ -128,7 +131,7 @@ decision_tree <- function(data) {
   # If tree fitting failed, return NULL
   if (is.null(tree_fit)) {
     # Create filename base
-    file_base <- paste0("output/decision-trees/dt_", spp, "_", site, "_", drate_pct, "pct")
+    file_base <- paste0("output/decision-trees/", outdir, "/dt_", spp, "_", site, "_", drate_pct, "pct")
 
     # Save a placeholder RDS
     saveRDS(list(
@@ -163,7 +166,7 @@ decision_tree <- function(data) {
   }
 
   # Create filename base (no spaces, appropriate for file systems)
-  file_base <- paste0("output/decision-trees/dt_", spp, "_", site, "_", drate_pct, "pct")
+  file_base <- paste0("output/decision-trees/", outdir, "/dt_", spp, "_", site, "_", drate_pct, "pct")
 
   # Save the tree object as RDS
   saveRDS(tree_fit, file = paste0(file_base, ".rds"))

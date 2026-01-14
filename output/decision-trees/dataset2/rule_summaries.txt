@@ -1,0 +1,63 @@
+## BM
+**Base rule (3% discount rate):** Crop tree if DBH <= 13" for any log grade, or DBH <= 14" if veneer-quality (grade 1)
+Requires crown ratio >= 35%
+
+**Discount rate adjustment:** Max DBH decreases by ~0.8" for each 1% increase in discount rate
+
+**Site adjustments:**
+- granitictill: -0.8" to max DBH
+## PB
+**Base rule (3% discount rate):** Crop tree only if veneer-quality (grade 1) and DBH <= 16"
+Requires crown ratio >= 45%
+*Sawlog-quality trees are not crop trees.*
+
+**Discount rate adjustment:** Max DBH decreases by ~0.7" for each 1% increase in discount rate
+
+**Site adjustments:**
+- mountaintill: +1.2" to max DBH
+- clayplain: -0.8" to max DBH
+- richnhw: -0.8" to max DBH
+## RM
+**Base rule (3% discount rate):** Crop tree if:
+- Veneer-quality (grade 1): DBH <= 17"
+- Sawlog-quality (grade 2): DBH <= 14"
+Requires crown ratio >= 25%
+
+**Discount rate adjustment:** Max DBH decreases by ~1" for each 1% increase in discount rate
+
+**Site adjustments:**
+- granitictill: +0.8" to max DBH
+- mountaintill: +0.8" to max DBH
+- clayplain: -1.2" to max DBH
+## SO
+**Base rule (3% discount rate):**
+- With crown ratio >= 35%: DBH <= 18"
+- With crown ratio < 35%: DBH <= 13"
+- **Veneer bonus:** Veneer-quality trees (grade 1) can be +4" larger
+
+**Discount rate adjustment:** Max DBH decreases by ~1.1" for each 1% increase in discount rate
+
+**Site adjustments:**
+- mountaintill: +2.2" to max DBH
+- granitictill: -0.8" to max DBH
+- clayplain: -1.8" to max DBH
+## WO
+**Base rule (3% discount rate):**
+- With crown ratio >= 35%: DBH <= 19"
+- With crown ratio < 35%: DBH <= 13"
+- **Veneer bonus:** Veneer-quality trees (grade 1) can be +5" larger
+
+**Discount rate adjustment:** Max DBH decreases by ~1.4" for each 1% increase in discount rate
+
+**Site adjustments:**
+- mountaintill: +1.8" to max DBH
+- clayplain: -1.2" to max DBH
+## YB
+**Base rule (3% discount rate):** Crop tree if DBH <= 21" when crown ratio >= 30%, or DBH <= 17" when crown ratio < 30%
+*Note: Trees with better crowns (higher CR) can be retained at larger sizes.*
+
+**Discount rate adjustment:** Max DBH decreases by ~1.6" for each 1% increase in discount rate
+
+**Site adjustments:**
+- richnhw: +1.5" to max DBH
+- granitictill: -1.5" to max DBH

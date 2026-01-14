@@ -1,4 +1,3 @@
-source("R/data.R")
 
 # test by varying just the crown ratio #########################################
 test <- dat |>

@@ -24,7 +24,7 @@
 if (!("stupper" %in% ls())) stupper <- T
 if (!("pulppositive" %in% ls())) pulppositive <- F
 if (!("drates" %in% ls())) drates <- seq(.02, .06, by = .01)
-source("R/simulation.R")
+# source("R/simulation.R")
 
 sites <- unique(sim$trees$site)
 sitetabs <- lapply(sites, function(i) {

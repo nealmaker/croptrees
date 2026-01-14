@@ -8,7 +8,7 @@ Developing criteria for choosing timber crop trees in the US Northeast
 
 - lev.R creates a data frame of sites and discount rates, with associated LEVs, based on definitions of expected repacement trees and calculations of NPVs of an infinite rotation of each tree. 
 
-- fct-croptrees.R defines a function that takes simulation data, a discount rate, a price factor (for scaling expected future stumpage values), and the LEV table, and returns a data frame of trees with a variable that defines if they are crop trees. [DOES NOT ACCOUNT FOR LEV YET, BUT SHOULD]
+- fct-croptrees.R defines a function that takes simulation data, a discount rate, a price factor (for scaling expected future stumpage values), and the LEV table, and returns a data frame of trees with a variable that defines if they are crop trees. 
 
 - grades-analysis.R sources simulation.R, explores relationships between grade and value growth (absent considerations of discounting and LEV, but accounting for mortality), and saves resulting plots to output/, allowing for detailed analysis of the effects of grade.
 

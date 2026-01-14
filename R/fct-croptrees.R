@@ -7,9 +7,14 @@
 #do sim, 0.5 is half, ...)
 
 # levs is lookup table of LEVs
-crop_trees <- function(data, rate, price_factor, levs) {
+
+# mortality_factor multiplies the rate of mortality for sensitivity analysis
+# 0.5 cuts mortality in half, 2 doubles mortality, etc.
+crop_trees <- function(data, rate, price_factor, levs, mortality_factor = 1) {
   data$drate <- rate
   data <- dplyr::left_join(data, levs, by = c("site", "drate"))
+  data$value <- data$value_nomort -
+    (mortality_factor * (data$value_nomort - data$value))
   data$value <- data$value * price_factor
   # PV is present value if cut @ t = data$year: includes LEV captured when cut
   data$pv <- (data$value / (1 + rate) ^ data$year) +
