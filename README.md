@@ -26,17 +26,24 @@ The `output/decision-trees/dataset2/` directory contains supplemental data inclu
 
 See `output/decision-trees/dataset2/README.md` for detailed documentation.
 
+## Key Assumptions
+
+- **Mortality factor:** The analysis assumes foresters will only mark crop trees without major crown dieback or disease symptoms, reducing expected mortality by ~40% compared to model predictions (mortality_factor = 0.6).
+- **Base discount rate:** Rules are presented at a 2% discount rate, with adjustments for higher rates.
+
 ## Key Findings
 
-| Species | Base Rule (3% discount rate) | Notes |
+| Species | Base Rule (2% discount rate) | Notes |
 |---------|------------------------------|-------|
 | Sugar Maple | DBH ≤ 13" (14" if veneer), CR ≥ 35% | Adjust -0.8"/1% discount rate |
 | Paper Birch | Veneer only, DBH ≤ 16", CR ≥ 45% | Sawlog never crop tree |
 | Red Maple | Veneer ≤ 17", Sawlog ≤ 14", CR ≥ 25% | Site-dependent |
-| Scarlet Oak | CR ≥ 35%: ≤ 18"; CR < 35%: ≤ 13" | +4" for veneer |
+| Red Oak | CR ≥ 35%: ≤ 18"; CR < 35%: ≤ 13" | +4" for veneer |
 | White Oak | CR ≥ 35%: ≤ 19"; CR < 35%: ≤ 13" | +5" for veneer |
 | Yellow Birch | CR ≥ 30%: ≤ 21"; CR < 30%: ≤ 17" | Largest DBH thresholds |
 | White Pine | Never a crop tree | Harvest immediately |
+
+*Note: DBH thresholds will be updated after regenerating decision trees with the 60% mortality factor.*
 
 ## Scripts
 

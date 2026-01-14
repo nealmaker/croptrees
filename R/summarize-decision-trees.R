@@ -281,10 +281,13 @@ extract_all_rules <- function(outdir = "dataset2",
 # PART 2: RULE CLASSIFICATION AND PATTERN ANALYSIS
 # =============================================================================
 
-#' Classify the logical form of rules for a species
+#' Summarize the rule structure for a species
 #'
-#' @param rules_df Data frame of rules for a single species (must have spp, site, drate columns)
-#' @return Character string describing the dominant logical form
+#' Rather than classifying into discrete categories, this describes what
+#' variables are used and how they affect the rule.
+#'
+#' @param rules_df Data frame of rules for a single species
+#' @return Character string describing the rule structure
 classify_rule_form <- function(rules_df) {
 
   # Filter to valid rules only
@@ -304,47 +307,26 @@ classify_rule_form <- function(rules_df) {
   uses_cr <- any(is.finite(valid_rules$cr_min) | is.finite(valid_rules$cr_max))
   uses_grade <- any(is.finite(valid_rules$best_log_min) | is.finite(valid_rules$best_log_max))
 
-  # Count how many rules per tree (indicates complexity)
-  # Check if grouping columns exist
-  if (all(c("site", "drate") %in% names(valid_rules))) {
-    rules_per_tree <- valid_rules %>%
-      group_by(site, drate) %>%
-      summarise(n_rules = n(), .groups = "drop")
-    avg_rules <- mean(rules_per_tree$n_rules)
-  } else {
-    # If no grouping columns, count total rules
-    avg_rules <- nrow(valid_rules)
-  }
+  # Check if CR creates different DBH thresholds
+  has_cr_dependent_dbh <- any(is.finite(valid_rules$cr_max)) &&
+    any(is.finite(valid_rules$cr_min) & valid_rules$cr_min >= 25)
 
-  # Classify based on which variables are used and complexity
-  if (!uses_dbh && !uses_cr && !uses_grade) {
+  # Build description
+  components <- c()
+  if (uses_dbh) components <- c(components, "DBH")
+  if (uses_cr) components <- c(components, "CR")
+  if (uses_grade) components <- c(components, "grade")
+
+  if (length(components) == 0) {
     return("always_crop")
   }
 
-  if (uses_dbh && !uses_cr && !uses_grade) {
-    return("dbh_only")
+  desc <- paste(components, collapse = "+")
+  if (has_cr_dependent_dbh) {
+    desc <- paste0(desc, " (CR-dependent DBH)")
   }
 
-  if (uses_dbh && uses_cr && !uses_grade) {
-    # Check if CR creates different DBH thresholds (CR-dependent form)
-    if (avg_rules > 1.2) {
-      return("cr_dependent")
-    }
-    return("simple_threshold")
-  }
-
-  if (uses_dbh && uses_grade && !uses_cr) {
-    return("grade_dependent")
-  }
-
-  if (uses_dbh && uses_cr && uses_grade) {
-    if (avg_rules > 1.5) {
-      return("mixed_complex")
-    }
-    return("mixed_simple")
-  }
-
-  return("other")
+  desc
 }
 
 
@@ -436,8 +418,8 @@ analyze_drate_effects <- function(simplified_df) {
     group_by(spp, site) %>%
     summarise(
       n_rates = n(),
-      dbh_at_3pct = dbh_max_overall[which.min(abs(drate - 0.03))],
-      cr_at_3pct = cr_min_overall[which.min(abs(drate - 0.03))],
+      dbh_at_2pct = dbh_max_overall[which.min(abs(drate - 0.02))],
+      cr_at_2pct = cr_min_overall[which.min(abs(drate - 0.02))],
       # Fit linear model for DBH vs drate
       dbh_slope = ifelse(
         n() >= 3,
@@ -476,13 +458,13 @@ analyze_drate_effects <- function(simplified_df) {
 analyze_site_effects <- function(simplified_df) {
 
 
-  # Use 3% discount rate as reference
+  # Use 2% discount rate as reference
   ref_data <- simplified_df %>%
-    filter(abs(drate - 0.03) < 0.001)
+    filter(abs(drate - 0.02) < 0.001)
 
   if (nrow(ref_data) == 0) {
     # Try closest available rate
-    closest_rate <- simplified_df$drate[which.min(abs(simplified_df$drate - 0.03))]
+    closest_rate <- simplified_df$drate[which.min(abs(simplified_df$drate - 0.02))]
     ref_data <- simplified_df %>%
       filter(abs(drate - closest_rate) < 0.001)
   }
@@ -616,16 +598,16 @@ compare_tree_to_rule <- function(tree_fit, simplified_rule, data) {
 # PART 4: PROSE SUMMARY GENERATION
 # =============================================================================
 
-#' Analyze grade effects from raw rules for a species at 3% discount rate
+#' Analyze grade effects from raw rules for a species at 2% discount rate
 #'
 #' @param raw_rules Raw rules data frame
 #' @param spp Species code
 #' @return List with grade analysis results
 analyze_grade_effects <- function(raw_rules, spp) {
 
-  # Filter to 3% rules for this species
+  # Filter to 2% rules for this species
   spp_rules <- raw_rules %>%
-    filter(spp == !!spp, status == "valid", abs(drate - 0.03) < 0.005)
+    filter(spp == !!spp, status == "valid", abs(drate - 0.02) < 0.005)
 
   if (nrow(spp_rules) == 0) {
     # Try other rates
@@ -717,9 +699,9 @@ analyze_grade_effects <- function(raw_rules, spp) {
 #' @return List with CR analysis results
 analyze_cr_effects <- function(raw_rules, spp) {
 
-  # Filter to 3% rules for this species
+  # Filter to 2% rules for this species
   spp_rules <- raw_rules %>%
-    filter(spp == !!spp, status == "valid", abs(drate - 0.03) < 0.005)
+    filter(spp == !!spp, status == "valid", abs(drate - 0.02) < 0.005)
 
   if (nrow(spp_rules) == 0) {
     spp_rules <- raw_rules %>%
@@ -826,8 +808,8 @@ generate_species_summary <- function(spp, simplified_df, site_effects, drate_eff
     list(cr_matters = FALSE, cr_dependent = FALSE)
   }
 
-  # Get overall DBH at 3%
-  ref_data <- spp_data %>% filter(abs(drate - 0.03) < 0.005)
+  # Get overall DBH at 2%
+  ref_data <- spp_data %>% filter(abs(drate - 0.02) < 0.005)
   if (nrow(ref_data) == 0) ref_data <- spp_data
   overall_dbh <- floor(median(ref_data$dbh_max_overall, na.rm = TRUE))
 
@@ -836,7 +818,7 @@ generate_species_summary <- function(spp, simplified_df, site_effects, drate_eff
 
   if (grade_info$grade_matters && cr_info$cr_dependent) {
     # Complex case: both grade and CR matter
-    lines <- c(lines, "**Base rule (3% discount rate):**")
+    lines <- c(lines, "**Base rule (2% discount rate):**")
 
     # Describe the CR-dependent thresholds first (use floor for DBH upper bounds)
     high_cr_dbh <- floor(cr_info$high_cr_dbh_max)
@@ -867,7 +849,7 @@ generate_species_summary <- function(spp, simplified_df, site_effects, drate_eff
     cr_thresh <- round(cr_info$typical_cr_threshold)
 
     lines <- c(lines, paste0(
-      "**Base rule (3% discount rate):** Crop tree if DBH <= ", high_cr_dbh,
+      "**Base rule (2% discount rate):** Crop tree if DBH <= ", high_cr_dbh,
       "\" when crown ratio >= ", cr_thresh, "%, or DBH <= ", low_cr_dbh,
       "\" when crown ratio < ", cr_thresh, "%"
     ))
@@ -890,7 +872,7 @@ generate_species_summary <- function(spp, simplified_df, site_effects, drate_eff
     if (!is.na(veneer_dbh) && !is.na(any_dbh) && veneer_dbh > any_dbh) {
       # Veneer extends the DBH limit
       lines <- c(lines, paste0(
-        "**Base rule (3% discount rate):** Crop tree if DBH <= ", any_dbh,
+        "**Base rule (2% discount rate):** Crop tree if DBH <= ", any_dbh,
         "\" for sawtimber or veneer, or DBH <= ", veneer_dbh,
         "\" if veneer-quality"
       ))
@@ -900,7 +882,7 @@ generate_species_summary <- function(spp, simplified_df, site_effects, drate_eff
     } else if (!is.na(veneer_dbh) && !is.na(sawlog_dbh)) {
       # Different limits for veneer vs sawlog
       lines <- c(lines, paste0(
-        "**Base rule (3% discount rate):** Crop tree if:"
+        "**Base rule (2% discount rate):** Crop tree if:"
       ))
       lines <- c(lines, paste0(
         "- Veneer-quality: DBH <= ", veneer_dbh, "\""
@@ -914,7 +896,7 @@ generate_species_summary <- function(spp, simplified_df, site_effects, drate_eff
     } else if (!is.na(veneer_dbh) && is.na(sawlog_dbh)) {
       # Only veneer trees can be crops
       lines <- c(lines, paste0(
-        "**Base rule (3% discount rate):** Crop tree only if veneer-quality ",
+        "**Base rule (2% discount rate):** Crop tree only if veneer-quality ",
         "and DBH <= ", veneer_dbh, "\""
       ))
       if (!is.na(min_cr) && min_cr > 0) {
@@ -924,7 +906,7 @@ generate_species_summary <- function(spp, simplified_df, site_effects, drate_eff
     } else {
       # Fallback
       lines <- c(lines, paste0(
-        "**Base rule (3% discount rate):** Crop tree if DBH <= ", overall_dbh, "\""
+        "**Base rule (2% discount rate):** Crop tree if DBH <= ", overall_dbh, "\""
       ))
       if (!is.na(min_cr) && min_cr > 0) {
         lines <- c(lines, paste0("Requires crown ratio >= ", min_cr, "%"))
@@ -937,7 +919,7 @@ generate_species_summary <- function(spp, simplified_df, site_effects, drate_eff
     min_cr <- round(cr_info$min_cr_required)
 
     lines <- c(lines, paste0(
-      "**Base rule (3% discount rate):** Crop tree if DBH <= ", overall_dbh, "\""
+      "**Base rule (2% discount rate):** Crop tree if DBH <= ", overall_dbh, "\""
     ))
     if (!is.na(min_cr) && min_cr > 0) {
       lines <- c(lines, paste0("Requires crown ratio >= ", min_cr, "%"))

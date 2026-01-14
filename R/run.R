@@ -103,6 +103,7 @@ for (site_type in unique(crops_all$site)) {
 # Based on what we've found, we can narrow the data down
 # (using only interesting spp and sites) & Use finer DBH graduations to get more
 # meaningful output. Also only use ST & veneer, since pulp trees are never crops
+################################################################################
 
 # need old lev_lookup
 rm(list = setdiff(ls(), c("lev_lookup")))
@@ -122,12 +123,17 @@ source("R/fct-decision-tree.R")
 # set new directory for output
 outdir <- "dataset2"
 
-# vary discount rates and keep default price factor ########################
-crops_all <- crop_trees(sim$trees, .02, 1, levs = lev_lookup)
+# vary discount rates and keep default price factor ############################
+# Use mortality_factor = 0.6 because the rules assume foresters will only mark
+# crop trees that don't have major crown dieback or disease symptoms, which
+# would reduce expected mortality by ~40% compared to the model's base rates.
+crops_all <- crop_trees(sim$trees, .02, 1, levs = lev_lookup, mortality_factor = 0.6)
 for (dr in c(.03, .04, .05, .06)) {
-  crops_all <- rbind(crops_all, crop_trees(sim$trees, dr, 1, levs = lev_lookup))
+  crops_all <- rbind(crops_all, crop_trees(sim$trees, dr, 1, levs = lev_lookup, mortality_factor = 0.6))
 }
+saveRDS(crops_all, file = paste0("output/decision-trees/", outdir, "/crops_all.rds"))
 
+# Make new updated decision trees ##############################################
 results <- list()
 
 for (site_type in unique(crops_all$site)) {
@@ -158,6 +164,19 @@ for (site_type in unique(crops_all$site)) {
   }
 }
 
+
+################################################################################
+# Make & evaluate simplified rules based on decision trees
+################################################################################
+source("R/summarize-decision-trees.R")
+results <- summarize_crop_tree_rules(outdir)
+accuracy <- evaluate_rule_accuracy(results, crops_all)
+source("R/evaluate-simplified-rules.R")
+
+
+################################################################################
+# Sensitivity analyses for mortality, price factor, & LEV
+################################################################################
 
 # Mortality Sensitivity: try 75% mortality #####################################
 # set new directory for output

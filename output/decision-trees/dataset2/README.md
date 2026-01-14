@@ -10,6 +10,10 @@ Crop trees are trees that should be retained and given growing space because the
 - **Crown ratio** (CR, percent of tree height with live crown)
 - **Best log grade** (1 = veneer quality, 2 = sawlog quality)
 
+## Mortality Assumptions
+
+The decision trees and simplified rules assume that foresters will only mark crop trees that do not have major crown dieback or disease symptoms. This selective marking is expected to reduce realized mortality rates by approximately 40% compared to the model's base mortality predictions. Therefore, the analysis uses a **mortality factor of 0.6** (60% of predicted mortality).
+
 ## Species Codes
 
 | Code | Common Name | Scientific Name |
@@ -62,33 +66,33 @@ Models were fit for discount rates of 2%, 3%, 4%, 5%, and 6%.
 
 ## Simplified Rules for Field Use
 
-The following rules approximate the decision tree models for practical field application at a **3% discount rate**. Adjust DBH thresholds as noted for different discount rates and sites.
+The following rules approximate the decision tree models for practical field application at a **2% discount rate**. Adjust DBH thresholds as noted for different discount rates and sites.
 
 ### Sugar Maple (BM)
 - **Base rule:** Crop tree if DBH ≤ 13" for sawtimber, or ≤ 14" if veneer-quality
 - **Requires:** Crown ratio ≥ 35%
-- **Discount rate adjustment:** -0.8" per 1% increase from 3%
+- **Discount rate adjustment:** -0.8" per 1% increase from 2%
 - **Site adjustment:** granitictill -0.8"
 
 ### Paper Birch (PB)
 - **Base rule:** Crop tree only if veneer-quality AND DBH ≤ 16"
 - **Requires:** Crown ratio ≥ 45%
 - **Note:** Sawlog-quality paper birch are not crop trees
-- **Discount rate adjustment:** -0.7" per 1% increase from 3%
+- **Discount rate adjustment:** -0.7" per 1% increase from 2%
 - **Site adjustments:** mountaintill +1.2", clayplain -0.8", richnhw -0.8"
 
 ### Red Maple (RM)
 - **Base rule:** Crop tree if veneer-quality and DBH ≤ 17", or sawlog-quality and DBH ≤ 14"
 - **Requires:** Crown ratio ≥ 25%
-- **Discount rate adjustment:** -1.0" per 1% increase from 3%
+- **Discount rate adjustment:** -1.0" per 1% increase from 2%
 - **Site adjustments:** granitictill +0.8", mountaintill +0.8", clayplain -1.2"
 
-### Scarlet Oak (SO)
+### Red Oak (SO)
 - **Base rule:**
   - Crown ratio ≥ 35%: DBH ≤ 18"
   - Crown ratio < 35%: DBH ≤ 13"
   - Veneer-quality trees can be +4" larger
-- **Discount rate adjustment:** -1.1" per 1% increase from 3%
+- **Discount rate adjustment:** -1.1" per 1% increase from 2%
 - **Site adjustments:** mountaintill +2.2", granitictill -0.8", clayplain -1.8"
 
 ### White Oak (WO)
@@ -96,7 +100,7 @@ The following rules approximate the decision tree models for practical field app
   - Crown ratio ≥ 35%: DBH ≤ 19"
   - Crown ratio < 35%: DBH ≤ 13"
   - Veneer-quality trees can be +5" larger
-- **Discount rate adjustment:** -1.4" per 1% increase from 3%
+- **Discount rate adjustment:** -1.4" per 1% increase from 2%
 - **Site adjustments:** mountaintill +1.8", clayplain -1.2"
 
 ### Yellow Birch (YB)
@@ -104,11 +108,13 @@ The following rules approximate the decision tree models for practical field app
   - Crown ratio ≥ 30%: DBH ≤ 21"
   - Crown ratio < 30%: DBH ≤ 17"
 - **Note:** Trees with better crowns can be retained at larger sizes
-- **Discount rate adjustment:** -1.6" per 1% increase from 3%
+- **Discount rate adjustment:** -1.6" per 1% increase from 2%
 - **Site adjustments:** richnhw +1.5", granitictill -1.5"
 
 ### White Pine (WP)
 - **Never a crop tree** under these economic assumptions (harvest immediately)
+
+**Note:** The DBH thresholds above are from an earlier analysis and will be updated after regenerating the decision trees with the 60% mortality factor.
 
 ## Accuracy Summary
 
